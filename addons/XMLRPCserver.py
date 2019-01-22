@@ -27,44 +27,67 @@ def command(com):
 def server_data():
     return bpy.app.version_string, bpy.context.blend_data.filepath, socket.gethostname()
 
+def pscan(host='localhost', port=8000):
+    # Setting up a socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    proxy = (host, port)
+    try:
+        con = sock.connect(proxy)
+        return True
+    except:
+        pass
+
+class ServerThread(threading.Thread):
+    def __init__(self, host='localhost', port=8000):
+        self.proxy = (host, port)
+        self.server = SimpleServer(self.proxy)
+        self.port = port
+        self.host = host
+        threading.Thread.__init__(self)
+        self.server.register_introspection_functions()
+        self.server.register_function(command, "command")
+        self.server.register_function(server_data, "server_data")
+
+    def run(self):
+        try:
+            self.server.serve_forever()
+            self.server_thread.setDaemon(True)
+        except KeyboardInterrupt:
+            print("Exiting")
+            sys.exit()
+
 class ServerPanel(bpy.types.Panel):
     bl_label = "Server Panel"
     bl_idname = "Object_PT_server"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_category = "Shortcuts"
-    proxy = xmlrpc.client.ServerProxy("http://localhost:8000/")
-
     def draw(self, context):
         layout = self.layout
-        version_string, filepath, hostname = self.proxy.server_data()
-        print('found server on', 'localhost:', hostname)
-        layout.row().label(text="Server found on: {}:{}".format(hostname,PORT))
-        layout.row().label(text="Press Ctrl-C in terminal to exit".format(hostname,PORT))        
+        print('found server on', 'localhost:', server.host)
+        layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
+        layout.row().label(text="Press Ctrl-C in terminal to exit".format(server.host, server.port))
+
+server = None
+x=8000
+while(server is None):
+    con = pscan(port=x)
+    if con is not None:
+        print("Server found on: localhost:", x)
+        x += 1
+    else:
+        # time.sleep(5.0)
+        server = ServerThread(port=x)
+        # Make sure the first port is the start up port.
+        print("Started the server with:", server.host, ":", server.port)
+        server.start()
+        print("... Press Ctrl+C to exit")
 
 def register():
-    global thread
-    thread = threading.Thread(target=maybe_launch_server)
-    thread.daemon = False
-    thread.start()
     bpy.utils.register_class(ServerPanel)
 
 def unregister():
     bpy.utils.unregister_class(ServerPanel)
-
-def maybe_launch_server():
-    proxy = xmlrpc.client.ServerProxy("http://localhost:8000/")
-    try:
-        result = proxy.server_data()
-    except ConnectionRefusedError:
-        server = SimpleServer((HOST, PORT))
-        server.register_introspection_functions()
-        server.register_function(command, "command")
-        server.register_function(server_data, "server_data")
-        version_string = bpy.app.version_string
-        print("Started the server with:", HOST, ":", PORT)
-        server.serve_forever()
-
 
 if __name__ == "__main__":
     register()
