@@ -66,7 +66,6 @@ class ServerPanel(bpy.types.Panel):
     def draw(self, context):
         # server = run_server()
         layout = self.layout
-        print('found server on', 'localhost:', server.host)
         layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
         layout.row().label(text="Press Ctrl-C in terminal to exit".format(server.host, server.port))
 
