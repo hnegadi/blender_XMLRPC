@@ -62,12 +62,15 @@ class ServerPanel(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_category = "Shortcuts"
+
     def draw(self, context):
+        # server = run_server()
         layout = self.layout
         print('found server on', 'localhost:', server.host)
         layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
         layout.row().label(text="Press Ctrl-C in terminal to exit".format(server.host, server.port))
 
+# def run_server():
 server = None
 x=8000
 while(server is None):
@@ -82,6 +85,7 @@ while(server is None):
         print("Started the server with:", server.host, ":", server.port)
         server.start()
         print("... Press Ctrl+C to exit")
+    # return server
 
 def register():
     bpy.utils.register_class(ServerPanel)
