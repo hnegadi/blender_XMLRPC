@@ -1,8 +1,4 @@
-import socket
-import sys
-import bpy
-import time
-import threading
+import bpy, sys, os, time, socket, threading
 from xmlrpc.server import SimpleXMLRPCServer
 import xmlrpc.client
 bl_info = {
@@ -25,7 +21,12 @@ def command(com):
     return com
 
 def server_data():
-    return bpy.app.version_string, bpy.context.blend_data.filepath, socket.gethostname()
+    return {
+        'hostname':socket.gethostname(),
+        'app_version':bpy.app.version_string,
+        'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
+        'exe':os.path.basename(bpy.app.binary_path)
+        }
 
 def pscan(host='localhost', port=8000):
     # Setting up a socket
@@ -64,10 +65,8 @@ class ServerPanel(bpy.types.Panel):
     bl_category = "Shortcuts"
 
     def draw(self, context):
-        # server = run_server()
         layout = self.layout
-        layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
-        layout.row().label(text="Press Ctrl-C in terminal to exit".format(server.host, server.port))
+        layout.row().label(text="XML RPC Server running on {}:{}".format(server.host, server.port))
 
 # def run_server():
 server = None
@@ -78,18 +77,21 @@ while(server is None):
         print("Server found on: localhost:", x)
         x += 1
     else:
-        # time.sleep(5.0)
         server = ServerThread(port=x)
         # Make sure the first port is the start up port.
         print("Started the server with:", server.host, ":", server.port)
         server.start()
-        print("... Press Ctrl+C to exit")
+        print()
+        # print("... Press Ctrl+C to exit")
+        # print('\n'.join(dir(server.server)))
     # return server
 
 def register():
     bpy.utils.register_class(ServerPanel)
 
 def unregister():
+    server.server.shutdown()
+    os.kill(os.getpid())
     bpy.utils.unregister_class(ServerPanel)
 
 if __name__ == "__main__":
