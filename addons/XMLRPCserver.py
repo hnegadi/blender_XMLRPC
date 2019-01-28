@@ -44,17 +44,17 @@ class ServerThread(threading.Thread):
         self.server.register_function(command, "command")
         self.server.register_function(server_data, "server_data")
 
-    def run(self):
-        try:
-            # self.server.serve_forever()
-            # self.server_thread.setDaemon(True)
-            self.server.proc = mp.Process(target=register)
-            self.server.proc.daemon = True
-            self.server.proc.start()
+    # def run(self):
+    #     try:
+    #         # self.server.serve_forever()
+    #         # self.server_thread.setDaemon(True)
+    #         self.server.proc = mp.Process(target=register)
+    #         self.server.proc.daemon = True
+    #         self.server.proc.start()
 
-        except KeyboardInterrupt:
-            print("Exiting")
-            sys.exit()
+    #     except KeyboardInterrupt:
+    #         print("Exiting")
+    #         sys.exit()
 
 class ServerPanel(bpy.types.Panel):
     bl_label = "Server Panel"
