@@ -1,4 +1,5 @@
 import bpy, sys, os, time, socket, threading
+import multiprocessing as mp
 from xmlrpc.server import SimpleXMLRPCServer
 import xmlrpc.client
 bl_info = {
@@ -28,7 +29,7 @@ def server_data():
         'exe':os.path.basename(bpy.app.binary_path)
         }
 
-def pscan(host='localhost', port=8000):
+def pscan(host=HOST, port=PORT):
     # Setting up a socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy = (host, port)
@@ -39,9 +40,10 @@ def pscan(host='localhost', port=8000):
         pass
 
 class ServerThread(threading.Thread):
-    def __init__(self, host='localhost', port=8000):
+    def __init__(self, host=HOST, port=PORT):
         self.proxy = (host, port)
         self.server = SimpleServer(self.proxy)
+        self.data = server_data
         self.port = port
         self.host = host
         threading.Thread.__init__(self)
@@ -51,9 +53,13 @@ class ServerThread(threading.Thread):
 
     def run(self):
         try:
-            self.server.serve_forever()
-            self.server_thread.setDaemon(True)
-        except KeyboardInterrupt:
+            # self.server.serve_forever()
+            # self.server_thread.setDaemon(True)
+            global thread
+            self.server.proc = mp.Process(target=run_server)
+            self.server.proc.daemon = True
+            self.server.proc.start()
+        except :
             print("Exiting")
             sys.exit()
 
@@ -63,36 +69,39 @@ class ServerPanel(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_category = "Shortcuts"
+    server = ServerThread()
 
     def draw(self, context):
         layout = self.layout
-        layout.row().label(text="XML RPC Server running on {}:{}".format(server.host, server.port))
+        hostname = server_data()
+        s_port = ServerThread(port=PORT)
+        layout.row().label(text="XML RPC Server running on {}: {}".format(hostname, s_port))
 
-# def run_server():
-server = None
-x=8000
-while(server is None):
-    con = pscan(port=x)
-    if con is not None:
-        print("Server found on: localhost:", x)
-        x += 1
-    else:
-        server = ServerThread(port=x)
-        # Make sure the first port is the start up port.
-        print("Started the server with:", server.host, ":", server.port)
-        server.start()
-        print()
-        # print("... Press Ctrl+C to exit")
-        # print('\n'.join(dir(server.server)))
-    # return server
-
+# Turns on the addon
 def register():
     bpy.utils.register_class(ServerPanel)
 
+# Turns off the addon
 def unregister():
-    server.server.shutdown()
-    os.kill(os.getpid())
     bpy.utils.unregister_class(ServerPanel)
+
+def run_server():
+    server = None
+    x=8000
+    while(server is None):
+        con = pscan(port=x)
+        if con is not None:
+            print("Server found on: localhost:", x)
+            x += 1
+        else:
+            server = ServerThread(port=x)
+            # Make sure the first port is the start up port.
+            print("Started the server with:", server.host, ":", server.port)
+            server.start()
+            print()
+            # print("... Press Ctrl+C to exit")
+            # print('\n'.join(dir(server.server)))
+        return server, x
 
 if __name__ == "__main__":
     register()
