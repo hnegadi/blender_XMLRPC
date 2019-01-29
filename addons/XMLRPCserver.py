@@ -1,5 +1,4 @@
 import bpy, sys, os, time, socket, threading
-import multiprocessing as mp
 from xmlrpc.server import SimpleXMLRPCServer
 import xmlrpc.client
 bl_info = {
@@ -10,8 +9,6 @@ bl_info = {
     "category": "System"
 }
 
-
-
 class SimpleServer(SimpleXMLRPCServer):
     pass
 
@@ -21,7 +18,12 @@ def command(com):
     return com
 
 def server_data():
-    return bpy.app.version_string, bpy.context.blend_data.filepath, socket.gethostname()
+    return {
+        'hostname':socket.gethostname(),
+        'app_version':bpy.app.version_string,
+        'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
+        'exe':os.path.basename(bpy.app.binary_path)
+        }
 
 def pscan(host='localhost', port=8000):
     # Setting up a socket
@@ -44,17 +46,18 @@ class ServerThread(threading.Thread):
         self.server.register_function(command, "command")
         self.server.register_function(server_data, "server_data")
 
-    # def run(self):
-    #     try:
-    #         # self.server.serve_forever()
-    #         # self.server_thread.setDaemon(True)
-    #         self.server.proc = mp.Process(target=register)
-    #         self.server.proc.daemon = True
-    #         self.server.proc.start()
+    # We must need this!!
+    def run(self):
+        try:
+            self.server.serve_forever()
+            self.server_thread.setDaemon(True)
+            # self.server. = mp.Process(target=register)
+            # self.server.proc.daemon = True
+            # self.server.proc.start()
 
-    #     except KeyboardInterrupt:
-    #         print("Exiting")
-    #         sys.exit()
+        except KeyboardInterrupt:
+            print("Exiting")
+            sys.exit()
 
 class ServerPanel(bpy.types.Panel):
     bl_label = "Server Panel"
@@ -70,7 +73,6 @@ class ServerPanel(bpy.types.Panel):
         layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
 
 
-# def run_server():
 server = None
 x=8000
 while(server is None):
@@ -79,13 +81,10 @@ while(server is None):
         print("Server found on: localhost:", x)
         x += 1
     else:
-        # time.sleep(5.0)
         server = ServerThread(port=x)
-        # Make sure the first port is the start up port.
         print("Started the server with:", server.host, ":", server.port)
         server.start()
         print("... Press Ctrl+C to exit")
-    # return server
 
 def register():
     bpy.utils.register_class(ServerPanel)
