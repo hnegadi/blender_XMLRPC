@@ -22,11 +22,14 @@ def command(com):
     return com
 
 def server_data():
+    # if len(bpy.data.objects.keys()):
     return {
         'hostname':socket.gethostname(),
         'app_version':bpy.app.version_string,
         'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
-        'exe':os.path.basename(bpy.app.binary_path)
+        'exe':os.path.basename(bpy.app.binary_path),
+        'scene_objects':bpy.data.objects.keys(),
+        'pid':os.getpid()
         }
 
 def pscan(host='localhost', port=8000):
