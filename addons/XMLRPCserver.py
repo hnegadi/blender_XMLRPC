@@ -1,7 +1,6 @@
 import bpy, sys, os, time, socket, threading
 from xmlrpc.server import SimpleXMLRPCServer
 import xmlrpc.client
-
 bl_info = {
     "name": "XMLRPC Server",
     "author": "KristenH",
@@ -9,9 +8,6 @@ bl_info = {
     "blender": (2, 79, 0),
     "category": "System"
 }
-
-from bpy.props import (BoolProperty, PointerProperty)
-from bpy.types import (Panel, Operator, PropertyGroup)
 
 class SimpleServer(SimpleXMLRPCServer):
     pass
@@ -42,16 +38,26 @@ def pscan(host='localhost', port=8000):
     except:
         pass
 
-# Add a turn on/off button for Blender
-class MySettings(PropertyGroup):
-    my_bool = BoolProperty(
-        name="End is checked",
-        description="End Server",
-        default = True
-    )
+def _async_raise(tid, exctype):
+    '''Raises an exception in the threads with id tid'''
+    if not inspect.isclass(exctype):
+        raise TypeError("Only types can be raised (not instances)")
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid),
+                                                     ctypes.py_object(exctype))
+    if res == 0:
+        raise ValueError("invalid thread id")
+    elif res != 1:
+        # "if it returns a number greater than one, you're in trouble,
+        # and you should call it again with exc=NULL to revert the effect"
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
 
 class ServerThread(threading.Thread):
+    '''A thread class that supports raising exception in the thread from
+       another thread.'''
     def __init__(self, host='localhost', port=8000):
+        super(ServerThread, self).__init__()
+        self._stop_event = threading.Event()
         self.proxy = (host, port)
         self.server = SimpleServer(self.proxy)
         self.port = port
@@ -60,6 +66,62 @@ class ServerThread(threading.Thread):
         self.server.register_introspection_functions()
         self.server.register_function(command, "command")
         self.server.register_function(server_data, "server_data")
+    
+    def _get_my_tid(self):
+        """determines this (self's) thread id
+
+        CAREFUL : this function is executed in the context of the caller
+        thread, to get the identity of the thread represented by this
+        instance.
+        """
+        if not self.isAlive():
+            raise threading.ThreadError("the thread is not active")
+
+        # do we have it cached?
+        if hasattr(self, "_thread_id"):
+            return self._thread_id
+
+        # no, look for it in the _active dict
+        for tid, tobj in threading._active.items():
+            if tobj is self:
+                self._thread_id = tid
+                return tid
+
+        # TODO: in python 2.6, there's a simpler way to do : self.ident
+
+        raise AssertionError("could not determine the thread's id")
+
+    def raiseExc(self, exctype):
+        """Raises the given exception type in the context of this thread.
+
+        If the thread is busy in a system call (time.sleep(),
+        socket.accept(), ...), the exception is simply ignored.
+
+        If you are sure that your exception should terminate the thread,
+        one way to ensure that it works is:
+
+            t = ThreadWithExc( ... )
+            ...
+            t.raiseExc( SomeException )
+            while t.isAlive():
+                time.sleep( 0.1 )
+                t.raiseExc( SomeException )
+
+        If the exception is to be caught by the thread, you need a way to
+        check that your thread has caught it.
+
+        CAREFUL : this function is executed in the context of the
+        caller thread, to raise an excpetion in the context of the
+        thread represented by this instance.
+        """
+        _async_raise( self._get_my_tid(), exctype )
+
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()        
 
     # We must need this!!
     def run(self):
@@ -72,87 +134,44 @@ class ServerThread(threading.Thread):
 
         except KeyboardInterrupt:
             print("Exiting")
-            self.server_thread.setDaemon(False)
             sys.exit()
 
+
+
+class ServerPanel(bpy.types.Panel):
+    bl_label = "Server Panel"
+    bl_idname = "Object_PT_server"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_category = "Shortcuts"
+    #server = ServerThread()
+
+    def draw(self, context):
+        # server = run_server()
+        layout = self.layout
+        layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
+
 global server
-server = None
 global x
-x = 8000
-while (server is None):
+server = None
+x=8000
+while(server is None):
     con = pscan(port=x)
     if con is not None:
         print("Server found on: localhost:", x)
         x += 1
     else:
         server = ServerThread(port=x)
-        print("Started the server with:", server.host, ":", server.port)
         server.start()
-
-class ServerOperator(bpy.types.Operator):
-    bl_idname = "wm.xmlrpc_server"
-    bl_label = "Terminate"
-
-    def execute(self, context):
-        scene = context.scene
-        mytool = scene.my_tool
-        global server
-        global x
-        #layout = self.layout
-        if (mytool.my_bool == True):
-            while (server is not None):
-                con = pscan(port=x)
-                server = ServerThread(port=x)
-                print("Server with", server.host, ":", server.port, "terminated.")
-                server.exit()
-                x -= 1
-        else:
-            pass
-        return {'FINISHED'}
-
-class ServerMenu(bpy.types.Menu):
-    bl_idname = "OBJECT_MT_select_test"
-    bl_label = "Select"
-
-    def draw(self, context):
-        layout = self.layout
-
-        layout.operator("object.select_all", text="Select/Deselect ALL").action = 'TOOGLE'
-        layout.operator("object.select_all", text="Inverse").action = 'INVERT'
-        layout.operator("object.select_random", text="Random")
-
-class ServerPanel(Panel):
-    bl_label = "Server"
-    bl_idname = "Object_PT_server"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
-    bl_category = "Tools"
-    bl_context = "objectmode"
-    #server = ServerThread()
-
-    @classmethod
-    def poll(self, context):
-        return context.object is not None
-
-    def draw(self, context):
-        # server = run_server()
-        layout = self.layout
-        scene = context.scene
-        mytool = scene.my_tool
-
-        layout.prop(mytool, "my_bool")
-        layout.operator("wm.xmlrpc_server")
-
+        print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
 
 def register():
-    bpy.utils.register_module(__name__)
-    bpy.types.Scene.my_tool = PointerProperty(type=MySettings)
-    #bpy.utils.register_class(ServerPanel)
+    bpy.utils.register_class(ServerPanel)
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
-    del bpy.types.Scene.my_tool
-    #bpy.utils.unregister_class(ServerPanel)
+    print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
+    server.stop()
+    bpy.utils.unregister_class(ServerPanel)
 
 if __name__ == "__main__":
     register()
