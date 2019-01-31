@@ -61,7 +61,7 @@ class ServerThread(threading.Thread):
         self.proxy = (host, port)
         self.server = SimpleServer(self.proxy)
         self.port = port
-        self.host = host
+        self.host = socket.gethostname()
         threading.Thread.__init__(self)
         self.server.register_introspection_functions()
         self.server.register_function(command, "command")
@@ -155,7 +155,7 @@ class ServerPanel(bpy.types.Panel):
     def draw(self, context):
         # server = run_server()
         layout = self.layout
-        layout.row().label(text="Server found on: {}:{}".format(server.host, server.port))
+        layout.row().label(text="XML-RPC Server Running on: {}:{}".format(server.host, server.port))
 
 global server
 global x
