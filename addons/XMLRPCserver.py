@@ -1,11 +1,11 @@
-import bpy, sys, os, time, socket, threading
+import bpy, bpy.ops, sys, os, time, socket, threading, signal, subprocess, atexit
 from xmlrpc.server import SimpleXMLRPCServer
 import xmlrpc.client
 bl_info = {
     "name": "XMLRPC Server",
     "author": "KristenH",
     "version": (0, 5, 0, 1),
-    "blender": (2, 79, 0),
+    "blender": (2, 80, 0),
     "category": "System"
 }
 
@@ -136,7 +136,13 @@ class ServerThread(threading.Thread):
             print("Exiting")
             sys.exit()
 
-
+    # Close the cross button to kill zombie process.
+    # def leaveBlender(self):
+    #     print("Cleaning up!")
+    #     subprocess.Popen("taskkill /f /im blender.exe")  # Use this!!
+    # print("leaving")
+    # atexit.register(leaveBlender)
+    # print("Exiting...")
 
 class ServerPanel(bpy.types.Panel):
     bl_label = "Server Panel"
@@ -165,13 +171,23 @@ while(server is None):
         server.start()
         print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
 
-def register():
-    bpy.utils.register_class(ServerPanel)
+# classes = (
+#     ServerPanel,
+# )
+# Enable server addon on Blender
 
+#register, unregister = bpy.utils.register_classes_factory(ServerPanel)
+def register():
+    from bpy.utils import register_class
+    register_class(ServerPanel)
+
+# Disable server addon form Blender
 def unregister():
     print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
-    server.stop()
-    bpy.utils.unregister_class(ServerPanel)
+
+    from bpy.utils import unregister_class
+    unregister_class(ServerPanel)
+
 
 if __name__ == "__main__":
     register()
