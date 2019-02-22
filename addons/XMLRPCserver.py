@@ -1,6 +1,7 @@
-import bpy, bpy.ops, sys, os, time, socket, threading, signal, subprocess, atexit
+import bpy, socket, threading, atexit, platform, subprocess, os
 from xmlrpc.server import SimpleXMLRPCServer
-import xmlrpc.client
+
+# basic infos
 bl_info = {
     "name": "XMLRPC Server",
     "author": "KristenH",
@@ -8,26 +9,36 @@ bl_info = {
     "blender": (2, 80, 0),
     "category": "System"
 }
+# where are we running from ?
+print(os.path.dirname(os.path.abspath(__file__)))
 
-class SimpleServer(SimpleXMLRPCServer):
-    pass
 
-def command(com):
-    com = 'import bpy\n'+com
-    exec(com)
-    return com
+# function to try to kill zombies upon blender exit
+def kill_process(pid):
+    if not(pid):
+        return
+    pid = str(pid)
+    current_os = platform.system()
+    if current_os == 'Windows':
+        cmd = ['taskkill', '/PID', pid]
+        # cmd = 'T:/apptools/bin/pskill.exe ' + pid
+        os.system(cmd)
+    else:
+        cmd = ['kill -9', '-ef', pid]
+        output = subprocess.check_output(cmd)
+        if self.debug:
+            print(output)
 
-def server_data():
-    # if len(bpy.data.objects.keys()):
-    return {
-        'hostname':socket.gethostname(),
-        'app_version':bpy.app.version_string,
-        'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
-        'exe':os.path.basename(bpy.app.binary_path),
-        'scene_objects':bpy.data.objects.keys(),
-        'pid':os.getpid()
-        }
 
+# this is what we try to register to catch blender exit event but it's not being triggered
+def goodbye(server):
+    print('goodbye')
+    server.stop()
+    kill_process(server._get_my_tid())
+    # kill_process(os.pid())
+
+
+# scan function to used to check first available port
 def pscan(host='localhost', port=8000):
     # Setting up a socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,6 +49,24 @@ def pscan(host='localhost', port=8000):
     except:
         pass
 
+
+# server functions registered in ServerThread class
+def command(com):
+    com = 'import bpy\n'+com
+    exec(com)
+    return com
+
+def server_data():
+    return {
+        'hostname':socket.gethostname(),
+        'app_version':bpy.app.version_string,
+        'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
+        'exe':os.path.basename(bpy.app.binary_path),
+        'scene_objects':bpy.data.objects.keys(),
+        'pid':os.getpid()
+        }
+
+# this is needed in ServerThread class
 def _async_raise(tid, exctype):
     '''Raises an exception in the threads with id tid'''
     if not inspect.isclass(exctype):
@@ -52,6 +81,11 @@ def _async_raise(tid, exctype):
         ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
 
+
+# Server classes
+class SimpleServer(SimpleXMLRPCServer):
+    pass
+
 class ServerThread(threading.Thread):
     '''A thread class that supports raising exception in the thread from
        another thread.'''
@@ -61,7 +95,7 @@ class ServerThread(threading.Thread):
         self.proxy = (host, port)
         self.server = SimpleServer(self.proxy)
         self.port = port
-        self.host = socket.gethostname()
+        self.host = host
         threading.Thread.__init__(self)
         self.server.register_introspection_functions()
         self.server.register_function(command, "command")
@@ -123,7 +157,7 @@ class ServerThread(threading.Thread):
     def stopped(self):
         return self._stop_event.is_set()        
 
-    # We must need this!!
+    # We no longer use this one at server_forever breaches blender's performance
     def run(self):
         try:
             self.server.serve_forever()
@@ -132,17 +166,10 @@ class ServerThread(threading.Thread):
             # self.server.proc.daemon = True
             # self.server.proc.start()
 
-        except KeyboardInterrupt:
+        except Exception:
             print("Exiting")
-            sys.exit()
+            leaveBlender()
 
-    # Close the cross button to kill zombie process.
-    # def leaveBlender(self):
-    #     print("Cleaning up!")
-    #     subprocess.Popen("taskkill /f /im blender.exe")  # Use this!!
-    # print("leaving")
-    # atexit.register(leaveBlender)
-    # print("Exiting...")
 
 class ServerPanel(bpy.types.Panel):
     bl_label = "Server Panel"
@@ -155,10 +182,9 @@ class ServerPanel(bpy.types.Panel):
     def draw(self, context):
         # server = run_server()
         layout = self.layout
-        layout.row().label(text="XML-RPC Server Running on: {}:{}".format(server.host, server.port))
+        layout.row().label(text="Server running on: {}:{}".format(server.host, server.port))
 
-global server
-global x
+
 server = None
 x=8000
 while(server is None):
@@ -170,13 +196,12 @@ while(server is None):
         server = ServerThread(port=x)
         server.start()
         print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
+        atexit.register(goodbye,server)
+        print(dir(atexit))
 
-# classes = (
-#     ServerPanel,
-# )
+
+
 # Enable server addon on Blender
-
-#register, unregister = bpy.utils.register_classes_factory(ServerPanel)
 def register():
     from bpy.utils import register_class
     register_class(ServerPanel)
@@ -184,10 +209,9 @@ def register():
 # Disable server addon form Blender
 def unregister():
     print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
-
     from bpy.utils import unregister_class
     unregister_class(ServerPanel)
 
-
+        
 if __name__ == "__main__":
     register()
