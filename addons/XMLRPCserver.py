@@ -68,6 +68,7 @@ class ServerPanel(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_category = "Shortcuts"
+    bl_context = "world"
 
     def draw(self, context):
         # server = run_server()
