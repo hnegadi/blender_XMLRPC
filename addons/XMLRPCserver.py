@@ -1,5 +1,6 @@
-import bpy, socket, threading, atexit, platform, subprocess, os
+import bpy, socket, threading, atexit, platform, subprocess, os, xml
 from xmlrpc.server import SimpleXMLRPCServer
+import xmlrpc.client as SimpleXMLRPCClient
 
 # basic infos
 bl_info = {
@@ -31,10 +32,10 @@ def kill_process(pid):
 
 
 # this is what we try to register to catch blender exit event but it's not being triggered
-def goodbye(server):
+def goodbye(server=None):
     print('goodbye')
-    server.stop()
-    kill_process(server._get_my_tid())
+    # server.stop()
+    # kill_process(server._get_my_tid())
     # kill_process(os.pid())
 
 
@@ -59,6 +60,7 @@ def command(com):
 def server_data():
     return {
         'hostname':socket.gethostname(),
+        'port':bpy.props.xmlrpc_port[1]['name'],
         'app_version':bpy.app.version_string,
         'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
         'exe':os.path.basename(bpy.app.binary_path),
@@ -82,18 +84,15 @@ def _async_raise(tid, exctype):
         raise SystemError("PyThreadState_SetAsyncExc failed")
 
 
-# Server classes
-class SimpleServer(SimpleXMLRPCServer):
-    pass
 
 class ServerThread(threading.Thread):
     '''A thread class that supports raising exception in the thread from
        another thread.'''
     def __init__(self, host='localhost', port=8000):
-        super(ServerThread, self).__init__()
+        # super(ServerThread, self).__init__()
         self._stop_event = threading.Event()
         self.proxy = (host, port)
-        self.server = SimpleServer(self.proxy)
+        self.server = SimpleXMLRPCServer(self.proxy)
         self.port = port
         self.host = host
         threading.Thread.__init__(self)
@@ -171,40 +170,61 @@ class ServerThread(threading.Thread):
             leaveBlender()
 
 
+def remote_server_data(port=8000, app='', debug=False):
+    if debug:
+        print('Scanning port:', port)
+    try:
+        host = socket.gethostname()
+        proxy = SimpleXMLRPCClient.ServerProxy('http://localhost:'+str(port)+'/', allow_none=True)
+        data=proxy.server_data()
+        pid = os.getpid()
+        if debug:
+            print('   ', pid, port, data)
+        if app not in data['exe']:
+            return
+        if pid!=data['pid']:
+            return data
+    except:
+        pass
+
+
 class ServerPanel(bpy.types.Panel):
     bl_label = "Server Panel"
     bl_idname = "Object_PT_server"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
-    bl_category = "Shortcuts"
-    #server = ServerThread()
+    # bl_context = "world"
 
-    def draw(self, context):
-        # server = run_server()
+    def __init__(self):
+
+        if 'xmlrpc_port' in dir(bpy.props):
+            return
+        x=8000
+        while('xmlrpc_port' not in dir(bpy.props)):
+            server_data = remote_server_data(port=x, app='blender')
+            if(server_data is not None):
+                x+=1
+            else:
+                server = ServerThread(port=x)
+                try:
+                    server.start()
+                except (KeyboardInterrupt, SystemExit):
+                    server.stop()
+                    sys.exit()
+                # server_data = remote_server_data(port=x, app='blender')
+                print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
+                bpy.props.xmlrpc_port = bpy.props.BoolProperty(name=x)
+
+    def draw(self,context):
         layout = self.layout
-        layout.row().label(text="Server running on: {}:{}".format(server.host, server.port))
-
-
-server = None
-x=8000
-while(server is None):
-    con = pscan(port=x)
-    if con is not None:
-        print("Server found on: localhost:", x)
-        x += 1
-    else:
-        server = ServerThread(port=x)
-        server.start()
-        print("Started the server with:", server.host, ":", server.port, 'thread_id' ,server._get_my_tid())
-        atexit.register(goodbye,server)
-        print(dir(atexit))
-
+        layout.row().label(text="Server started on: {}:{}".format(socket.gethostname(), bpy.props.xmlrpc_port[1]['name']))
 
 
 # Enable server addon on Blender
 def register():
     from bpy.utils import register_class
     register_class(ServerPanel)
+
 
 # Disable server addon form Blender
 def unregister():
