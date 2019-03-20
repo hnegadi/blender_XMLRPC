@@ -1,4 +1,7 @@
-import bpy, socket, threading, os
+import bpy
+import socket
+import threading
+import os
 from xmlrpc.server import SimpleXMLRPCServer
 
 # basic infos
@@ -19,10 +22,9 @@ def pscan(host='localhost', port=8000):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy = (host, port)
     try:
-        con = sock.connect(proxy)
-        return True
-    except:
-        pass
+        return sock.connect(proxy)
+    except(socket.error):
+        print('Couldnt connect with the socket-server: %s\n' % port)
 
 
 # server functions registered in ServerThread class
@@ -31,15 +33,17 @@ def command(com):
     exec(com)
     return com
 
+
 def server_data():
     return {
-        'hostname':socket.gethostname(),
-        'app_version':bpy.app.version_string,
-        'file_path':bpy.context.blend_data.filepath.replace('\\', '/'),
-        'exe':os.path.basename(bpy.app.binary_path),
-        'scene_objects':bpy.data.objects.keys(),
-        'pid':os.getpid()
+        'hostname': socket.gethostname(),
+        'app_version': bpy.app.version_string,
+        'file_path': bpy.context.blend_data.filepath.replace('\\', '/'),
+        'exe': os.path.basename(bpy.app.binary_path),
+        'scene_objects': bpy.data.objects.keys(),
+        'pid': os.getpid()
         }
+
 
 # ServerThread class
 class ServerThread(threading.Thread):
@@ -52,10 +56,10 @@ class ServerThread(threading.Thread):
         self.server.register_function(server_data, 'server_data')
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.port = port
-        self.host = host
-        self.hostname = socket.gethostname()
 
-    # we make sure to demonize so there's no zombie remain after quitting blender
+    # we make sure to demonize
+    # to avoid zombie process
+    # remaining after blender exit
     def start(self):
         self.thread.setDaemon(True)
         self.thread.start()
@@ -71,11 +75,13 @@ class ServerPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        layout.row().label(text='Server running on {}:{}'.format(server.hostname, server.port))
+        layout.row().label(text='XMLRPC Server Running:')
+        layout.row().label(text='{}:{}'.format(
+            socket.gethostname(), server.port))
 
 
 server = None
-x=8000
+x = 8000
 while(server is None):
     con = pscan(port=x)
     if con is not None:
@@ -84,7 +90,6 @@ while(server is None):
     else:
         server = ServerThread(port=x)
         server.start()
-
 
 
 # Enable server addon on Blender
@@ -97,6 +102,7 @@ def register():
 def unregister():
     from bpy.utils import unregister_class
     unregister_class(ServerPanel)
-       
+
+
 if __name__ == '__main__':
     register()
