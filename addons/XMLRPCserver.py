@@ -17,14 +17,19 @@ print(os.path.dirname(os.path.abspath(__file__)))
 
 
 # scan function to used to check first available port
-def pscan(host='localhost', port=8000):
+def port_scan(host='localhost', port=8000, debug=False):
     # Setting up a socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     proxy = (host, port)
     try:
-        return sock.connect(proxy)
+        if debug:
+            print (proxy)
+        sock.connect(proxy)
+        return True
     except(socket.error):
-        print('Couldnt connect with the socket-server: %s\n' % port)
+        if debug:
+            print('Couldnt connect with the socket-server: %s\n' % port)
+        return False
 
 
 # server functions registered in ServerThread class
@@ -80,12 +85,14 @@ class ServerPanel(bpy.types.Panel):
             socket.gethostname(), server.port))
 
 
+DEBUG = True
 server = None
 x = 8000
 while(server is None):
-    con = pscan(port=x)
-    if con is not None:
-        print('Server found on: localhost:', x)
+    is_socket = port_scan(port=x, debug=DEBUG)
+    if is_socket:
+        if DEBUG:
+            print('Server found on: localhost:', x)
         x += 1
     else:
         server = ServerThread(port=x)
