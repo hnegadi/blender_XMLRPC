@@ -85,7 +85,7 @@ class ServerPanel(bpy.types.Panel):
             socket.gethostname(), server.port))
 
 
-DEBUG = True
+DEBUG = False
 server = None
 x = 8000
 while(server is None):
