@@ -39,7 +39,14 @@ def command(com):
     return com
 
 def scene_objects():
-	return bpy.data.objects.keys()
+    s = ''
+    for i in bpy.data.objects.keys():
+        s += i
+        s += ','
+    if s:
+        return s[:-1]
+    else:
+        return s
 
 def server_data():
     return {
@@ -61,6 +68,7 @@ class ServerThread(threading.Thread):
         self.server.register_introspection_functions()
         self.server.register_function(command, 'command')
         self.server.register_function(server_data, 'server_data')
+        self.server.register_function(scene_objects, 'scene_objects')
         self.thread = threading.Thread(target=self.server.serve_forever)
         self.port = port
 
@@ -70,6 +78,9 @@ class ServerThread(threading.Thread):
     def start(self):
         self.thread.setDaemon(True)
         self.thread.start()
+
+    def stop(self):
+        self.thread.stop()
 
 
 class ServerPanel(bpy.types.Panel):

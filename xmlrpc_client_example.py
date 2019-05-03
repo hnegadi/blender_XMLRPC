@@ -18,6 +18,19 @@ def server_data(host='localhost', port=8000, app='', debug=False):
         if debug:
             print('Couldnt connect with the socket-server: %s\n' % port)
 
+def scene_objects(host='localhost', port=8000, app='', debug=False):
+    if debug:
+        print 'Scanning port:', port
+    try:
+        proxy = xmlrpclib.ServerProxy(
+            'http://'+host+':'+str(port)+'/', allow_none=True)
+        return proxy.scene_objects()
+    except(socket.error):
+        if debug:
+            print('Couldnt connect with the socket-server: %s\n' % port)
+
+# get server data function
+
 
 # send a command to the server
 def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
@@ -35,12 +48,15 @@ def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
             )
     return com
 
-data = server_data()
-string_cmd=''
-string_cmd+='def str_data(data):'
-string_cmd+='\n'
-string_cmd+='   return data'
-string_cmd+='\n'
-string_cmd+='print(str_data('+str(data)+'))'
-xmlrpc_command(string_cmd)
+# data = server_data()
+# scene_objects = data['scene_objects']
+print scene_objects(), type(scene_objects())
+# print scene_objects, type(scene_objects)
+# string_cmd=''
+# string_cmd+='def str_data(data):'
+# string_cmd+='\n'
+# string_cmd+='   return data'
+# string_cmd+='\n'
+# string_cmd+='print(str_data('+str(data)+'))'
+# xmlrpc_command(string_cmd)
 
