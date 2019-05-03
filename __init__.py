@@ -8,7 +8,7 @@ from xmlrpc.server import SimpleXMLRPCServer
 bl_info = {
     'name': 'xmlrpc Server',
     'author': 'Kristen Haave | Halim Negadi',
-    'version': (0, 5, 0, 1),
+    'version': (0, 5, 0, 2),
     'blender': (2, 80, 0),
     'category': 'System'
 }
@@ -38,6 +38,8 @@ def command(com):
     exec(com)
     return com
 
+def scene_objects():
+	return bpy.data.objects.keys()
 
 def server_data():
     return {
