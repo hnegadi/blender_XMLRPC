@@ -49,12 +49,8 @@ def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
     return com
 
 data = server_data()
-scene_objects = data['scene_objects']
+scene_objects =scene_objects()
 print('Scene Objects are:', *scene_objects, sep='\n')
 string_cmd=''
-string_cmd+='def str_data(data):'
-string_cmd+='\n'
-string_cmd+='   return data'
-string_cmd+='\n'
-string_cmd+='print(str_data('+str(data)+'))'
+string_cmd+='print("Scene Objects are:", *'+scene_objects+', sep="\n\")\n'
 xmlrpc_command(string_cmd)
