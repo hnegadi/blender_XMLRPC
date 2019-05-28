@@ -96,7 +96,7 @@ class ServerPanel(bpy.types.Panel):
         layout.row().label(text='XMLRPC Server Running:')
         layout.row().label(text='{}:{}'.format(
             socket.gethostname(), server.port))
-        layout.row().label(text='Blender Version: {}'.format(str(bpy.app.version)))
+        layout.row().label(text='Blender Version {}'.format(bpy.app.version_string))
 
 
 DEBUG = False
