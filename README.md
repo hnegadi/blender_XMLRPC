@@ -20,7 +20,7 @@ The addon is compatible with both 2.7* and 2.8* versions of blender. Even if it 
 KNOWN ISSUES
 ----------------
 It can happen that exiting a blender session leaves a zombie process.
-You can check this after exiting all blender sessions if the port is not the first supposignly available as of 8000.
+You can check this after exiting all blender sessions if the port is not the first supposignly available as of 8000 in a session you just started.
 
 
 INSTALL
@@ -45,7 +45,7 @@ USE CASES
 
 within a python2.7* enviromnent you should proceed this way:
 ```python
-mport xmlrpclib, socket
+import xmlrpclib, socket
 
 # get server data function
 def server_data(host='localhost', port=8000, app='', debug=False):
@@ -80,7 +80,7 @@ def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
     return com
 
 # get blender data as scene contents
-port=8000
+port=8001
 data = server_data(port=port)
 scene_objects = data['scene_objects']
 print scene_objects, type(scene_objects)
@@ -89,7 +89,7 @@ print scene_objects, type(scene_objects)
 string_cmd=''
 string_cmd+='print()\n'
 string_cmd+='print("Blender data is: '+str(data)+'")\n'
-string_cmd+='print("Scene Objects are: '+str(data)+'")\n'
+string_cmd+='print("Scene Objects are: '+str(scene_objects)+'")\n'
 string_cmd+='print()\n'
 xmlrpc_command(string_cmd, port=port)
 ```
@@ -140,12 +140,15 @@ port=8001
 
 # print data from remote blender session within the current blender session
 data = server_data(port=port)
-sceneobjects = str(data['scene_objects'])
-print('Scene Objects are:', sceneobjects)
+scene_objects = str(data['scene_objects'])
+print('Scene Objects are:', scene_objects)
 
 # send print data cmd from current blender session in the remote blender session
 string_cmd=''
-string_cmd+='print("Scene Objects are: '+sceneobjects+'")\n'
+string_cmd+='print()\n'
+string_cmd+='print("Blender data is: '+str(data)+'")\n'
+string_cmd+='print("Scene Objects are: '+str(scene_objects)+'")\n'
+string_cmd+='print()\n'
 xmlrpc_command(string_cmd, port=port)
 ```
 
@@ -154,3 +157,5 @@ IMPORTANT LINKS:
 https://docs.python.org/3/library/xmlrpc.server.html
 
 https://docs.python.org/3/library/threading.html
+
+
