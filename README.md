@@ -6,12 +6,19 @@ XML RPC allows to send string commands from outside of blender.
 One of its purpose is to allow python2.7 based pipelines to talk to blender sending string commands.
 It can be also usefull to have two blender sessions talking to each other.
 
+
 RELEASE NOTES
 ----------------
 By default it the server will run on first available port as of 8000.
 So, given the fact that port 8000 is available on your computer, if you start a new blender session, it will take the next available port as of 8001, etc.
-You can find the status of the xml rpc server in the world tab of the Properties panel.
+You can find the status of the xml rpc server in the world tab of the Properties panel > Server Panel.
 The addon is compatible with both 2.7* and 2.8* versions of blender. Even if it will complain that it's been written with 2.8* it will still properly run in 2.7*
+
+
+KNOWN ISSUES
+----------------
+It can happen that exiting a blender session leaves a zombie process, you
+
 
 HOW TO
 ----------------
@@ -70,12 +77,14 @@ xmlrpc_command(string_cmd, port=port)
 within a python3.* environment.
 In this example we assume a blender session  talking to another one on localhost.
 ```python
-mport xmlrpclib, socket
+import xmlrpc.client as xmlrpclib
+import socket
+
 
 # get server data function
 def server_data(host='localhost', port=8000, app='', debug=False):
     if debug:
-        print 'Scanning port:', port
+        print('Scanning port:', port)
     try:
         proxy = xmlrpclib.ServerProxy(
             'http://'+host+':'+str(port)+'/', allow_none=True)
@@ -104,23 +113,23 @@ def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
             )
     return com
 
-# get blender data as scene contents
-port=8000
-data = server_data(port=port)
-scene_objects = data['scene_objects']
-print scene_objects, type(scene_objects)
+# since in this example, we assume we assume you are running this script
+# from a blender session which already runs an xml-rpc server on port 8000
+# in order to talk to another on which is running xml-rpc server on port 8001
+port=8001
 
-# build the string command
-string_cmd+='print()\n'
-string_cmd+='print("Blender data is: '+str(data)+'")\n'
-string_cmd+='print("Scene Objects are: '+str(data)+'")\n'
-string_cmd+='print()\n'
-# send the string command
+# print data from remote blender session within the current blender session
+data = server_data(port=port)
+sceneobjects = str(data['scene_objects'])
+print('Scene Objects are:', sceneobjects)
+
+# send print data cmd from current blender session in the remote blender session
+string_cmd=''
+string_cmd+='print("Scene Objects are: '+sceneobjects+'")\n'
 xmlrpc_command(string_cmd, port=port)
 ```
 
 IMPORTANT LINKS:
 ----------------
 https://docs.python.org/3/library/xmlrpc.server.html
-https://docs.python.org/3/library/threading.html
 
