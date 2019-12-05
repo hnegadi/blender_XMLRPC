@@ -20,12 +20,12 @@ The addon is compatible with both 2.7* and 2.8* versions of blender. Even if it 
 KNOWN ISSUES
 ----------------
 It can happen that exiting a blender session leaves a zombie process.
-You can check this after exiting all blender sessions if the port is not the first supposignly available as of 8000
+You can check this after exiting all blender sessions if the port is not the first supposignly available as of 8000.
 
 
 INSTALL
 ----------------
-If you want the xml_rpc to launch at blender startup you should clone within a folder like:
+If you want the xml_rpc to launch at blender startup you should clone wihin a folder like:
 <pre>
 [PATH_YOU_SET_IN_BLENDER_SCRIPTS_FILEPATH_PREFERENCE]
 	├── addons
@@ -33,14 +33,12 @@ If you want the xml_rpc to launch at blender startup you should clone within a f
 	├── presets
 	└── startup
 	    └── xmlrpc_server
+	        ├── .git
+	        ├── .gitignore
 	        ├── __init__.py
 	        ├── LICENSE
-	        ├── __pycache__
-	        │   ├── __init__.cpython-36.pyc
-	        │   └── __init__.cpython-37.pyc
 	        └── README.md
 </pre>
-
 
 USE CASES
 ----------------
@@ -156,5 +154,3 @@ IMPORTANT LINKS:
 https://docs.python.org/3/library/xmlrpc.server.html
 
 https://docs.python.org/3/library/threading.html
-
-
