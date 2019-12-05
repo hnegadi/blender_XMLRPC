@@ -133,7 +133,7 @@ def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
             )
     return com
 
-# since in this example, we assume we assume you are running this script
+# since in this example, we assume you are running this script
 # from a blender session which already runs an xml-rpc server on port 8000
 # in order to talk to another on which is running xml-rpc server on port 8001
 port=8001
