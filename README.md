@@ -26,7 +26,7 @@ You can check this after exiting all blender sessions if the port is not the fir
 INSTALL
 ----------------
 If you want the xml_rpc to launch at blender startup you should clone wihin a folder like:
-'''
+<pre>
 [PATH_YOU_SET_IN_BLENDER_SCRIPTS_FILEPATH_PREFERENCE]
 	├── addons
 	├── modules
@@ -39,7 +39,8 @@ If you want the xml_rpc to launch at blender startup you should clone wihin a fo
 	        │   ├── __init__.cpython-36.pyc
 	        │   └── __init__.cpython-37.pyc
 	        └── README.md
-'''
+</pre>
+
 
 USE CASES
 ----------------
