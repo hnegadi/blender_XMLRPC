@@ -23,8 +23,25 @@ It can happen that exiting a blender session leaves a zombie process.
 You can check this after exiting all blender sessions if the port is not the first supposignly available as of 8000
 
 
+INSTALL
+----------------
+If you want the xml_rpc to launch at blender startup you should clone wihin a folder like:
+'''
+[PATH_YOU_SET_IN_BLENDER_SCRIPTS_FILEPATH_PREFERENCE]
+	├── addons
+	├── modules
+	├── presets
+	└── startup
+	    └── xmlrpc_server
+	        ├── __init__.py
+	        ├── LICENSE
+	        ├── __pycache__
+	        │   ├── __init__.cpython-36.pyc
+	        │   └── __init__.cpython-37.pyc
+	        └── README.md
+'''
 
-HOW TO
+USE CASES
 ----------------
 
 within a python2.7* enviromnent you should proceed this way:
