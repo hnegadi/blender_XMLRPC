@@ -3,6 +3,7 @@ Blender XML RPC Server
 Blender XML RPC Server runs an xml_rpc server in blender.
 It runs within a separate thread within blender in order not to breach scene graph evaluation performance:
 https://docs.python.org/3/library/threading.html
+
 Thanks to [Kristen Skogholt Haave](https://www.linkedin.com/in/kristensh) who figured this out.
 
 XML RPC allows to send string commands from outside of blender.
