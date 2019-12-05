@@ -4,6 +4,7 @@ Blender XML RPC Server runs an xml_rpc server in blender.
 It runs within a separate thread within blender in order not to breach scene graph evaluation performance.
 XML RPC allows to send string commands from outside of blender.
 One of its purpose is to allow python2.7 based pipelines to talk to blender sending string commands.
+It can be also usefull to have two blender sessions talking to each other.
 
 RELEASE NOTES
 ----------------
@@ -15,25 +16,107 @@ The addon is compatible with both 2.7* and 2.8* versions of blender. Even if it 
 HOW TO
 ----------------
 
-within a python2.7 enviromnent you should proceed this way:
-
+within a python2.7* enviromnent you should proceed this way:
 ```python
-import xmlrpclib, os, socket, sys
+mport xmlrpclib, socket
 
-def xmlrpc_command(string_cmd, port=8000):
-    # try except in case of remaining zombie processes
+# get server data function
+def server_data(host='localhost', port=8000, app='', debug=False):
+    if debug:
+        print 'Scanning port:', port
     try:
-        host = socket.gethostname()
-        proxy = xmlrpclib.ServerProxy("http://localhost:"+str(port)+"/", allow_none=True)
-        print "on port",port,"and host", host, "Your command is: " + proxy.command(string_cmd)
-        return True
-    except:
-        return
+        proxy = xmlrpclib.ServerProxy(
+            'http://'+host+':'+str(port)+'/', allow_none=True)
+        data = proxy.server_data()
+        if debug:
+            print('   ', port, data)
+        if app in data['exe']:
+            return data
+    except(socket.error):
+        if debug:
+            print('Couldnt connect with the socket-server: %s\n' % port)
 
-string_cmd = ''
-string_cmd += 'running from\n' + sys.version + '\n'
-string_cmd += 'print("HELLO")\n'
-xmlrpc_command(, port=8000)
+# send a command to the server
+def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
+    proxy = xmlrpclib.ServerProxy(
+        'http://'+host+':'+str(port)+'/',
+        allow_none=True)
+    com = proxy.command(string_cmd)
+    if debug:
+        print(
+            'on port',
+            port,
+            'and host',
+            host,
+            'Your command is: ' + com
+            )
+    return com
+
+# get blender data as scene contents
+port=8000
+data = server_data(port=port)
+scene_objects = data['scene_objects']
+print scene_objects, type(scene_objects)
+
+# send a string command
+string_cmd=''
+string_cmd+='print()\n'
+string_cmd+='print("Blender data is: '+str(data)+'")\n'
+string_cmd+='print("Scene Objects are: '+str(data)+'")\n'
+string_cmd+='print()\n'
+xmlrpc_command(string_cmd, port=port)
+```
+
+within a python3.* environment.
+In this example we assume a blender session  talking to another one on localhost.
+```python
+mport xmlrpclib, socket
+
+# get server data function
+def server_data(host='localhost', port=8000, app='', debug=False):
+    if debug:
+        print 'Scanning port:', port
+    try:
+        proxy = xmlrpclib.ServerProxy(
+            'http://'+host+':'+str(port)+'/', allow_none=True)
+        data = proxy.server_data()
+        if debug:
+            print('   ', port, data)
+        if app in data['exe']:
+            return data
+    except(socket.error):
+        if debug:
+            print('Couldnt connect with the socket-server: %s\n' % port)
+
+# send a command to the server
+def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
+    proxy = xmlrpclib.ServerProxy(
+        'http://'+host+':'+str(port)+'/',
+        allow_none=True)
+    com = proxy.command(string_cmd)
+    if debug:
+        print(
+            'on port',
+            port,
+            'and host',
+            host,
+            'Your command is: ' + com
+            )
+    return com
+
+# get blender data as scene contents
+port=8000
+data = server_data(port=port)
+scene_objects = data['scene_objects']
+print scene_objects, type(scene_objects)
+
+# build the string command
+string_cmd+='print()\n'
+string_cmd+='print("Blender data is: '+str(data)+'")\n'
+string_cmd+='print("Scene Objects are: '+str(data)+'")\n'
+string_cmd+='print()\n'
+# send the string command
+xmlrpc_command(string_cmd, port=port)
 ```
 
 IMPORTANT LINKS:
