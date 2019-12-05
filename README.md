@@ -5,14 +5,14 @@ It runs within a separate thread within blender in order not to breach scene gra
 XML RPC allows to send string commands from outside of blender.
 One of its purpose is to allow python2.7 based pipelines to talk to blender sending string commands.
 
-RELEASE NOTES:
+RELEASE NOTES
 ----------------
 By default it the server will run on first available port as of 8000.
 So, given the fact that port 8000 is available on your computer, if you start a new blender session, it will take the next available port as of 8001, etc.
 You can find the status of the xml rpc server in the world tab of the Properties panel.
 The addon is compatible with both 2.7* and 2.8* versions of blender. Even if it will complain that it's been written with 2.8* it will still properly run in 2.7*
 
-HOW TO:
+HOW TO
 ----------------
 
 within a python2.7 enviromnent you should proceed this way:
