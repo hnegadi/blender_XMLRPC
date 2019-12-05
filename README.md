@@ -25,7 +25,7 @@ You can check this after exiting all blender sessions if the port is not the fir
 
 INSTALL
 ----------------
-If you want the xml_rpc to launch at blender startup you should clone wihin a folder like:
+If you want the xml_rpc to launch at blender startup you should clone within a folder like:
 <pre>
 [PATH_YOU_SET_IN_BLENDER_SCRIPTS_FILEPATH_PREFERENCE]
 	├── addons
