@@ -17,7 +17,9 @@ The addon is compatible with both 2.7* and 2.8* versions of blender. Even if it 
 
 KNOWN ISSUES
 ----------------
-It can happen that exiting a blender session leaves a zombie process, you
+It can happen that exiting a blender session leaves a zombie process.
+You can check this after exiting all blender sessions if the port is not the first supposignly available as of 8000
+
 
 
 HOW TO
