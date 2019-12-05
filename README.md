@@ -80,7 +80,7 @@ def xmlrpc_command(string_cmd, host='localhost', port=8000, debug=False):
     return com
 
 # get blender data as scene contents
-port=8001
+port=8000
 data = server_data(port=port)
 scene_objects = data['scene_objects']
 print scene_objects, type(scene_objects)
